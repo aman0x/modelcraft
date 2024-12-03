@@ -47,18 +47,22 @@
 
             // Function to draw 3D walls with material
             const drawWalls = (coordinates) => {
-                const wallHeight = 5; // Height of the walls
-                const wallThickness = 0.1; // Thickness of the walls
+                const wallHeight = 5;
+                const wallThickness = 0.1;
 
                 const wallMaterial = new THREE.MeshStandardMaterial({
-                    map: wallTexture, // Apply the texture
-                    color: 0xffffff, // Optional base color
+                    map: wallTexture,
+                    color: 0xffffff,
                 });
+
+                console.log("Drawing walls with coordinates:", coordinates);
 
                 for (let i = 0; i < coordinates.length - 1; i++)
                 {
                     const start = coordinates[i];
                     const end = coordinates[i + 1];
+
+                    console.log(`Processing wall from (${start.X}, ${start.Y}) to (${end.X}, ${end.Y})`);
 
                     const startX = parseFloat(start.X);
                     const startY = parseFloat(start.Y);
@@ -71,7 +75,7 @@
                         continue;
                     }
 
-                    const scaleFactor = 50;
+                    const scaleFactor = 20;
                     const scaledStartX = startX * scaleFactor;
                     const scaledStartY = startY * scaleFactor;
                     const scaledEndX = endX * scaleFactor;
@@ -113,10 +117,19 @@
                 });
             };
 
-            // Preprocess coordinates
             const preprocessCoordinates = (data) => {
-                return data.filter((row) => !isNaN(parseFloat(row.X)) && !isNaN(parseFloat(row.Y)));
+                const seen = new Set();
+                return data.filter((row) => {
+                    const x = parseFloat(row.X);
+                    const y = parseFloat(row.Y);
+                    if (isNaN(x) || isNaN(y)) return false;
+                    const key = `${x},${y}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
             };
+
 
             // Load CSV and draw 3D room
             loadCSV('coordinates.csv')
