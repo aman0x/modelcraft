@@ -7,6 +7,7 @@
         <style>
             body {
                 margin: 0;
+                overflow: hidden;
             }
         </style>
     </head>
@@ -15,87 +16,71 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
         <script>
-            const wallsData = {{ walls_json| safe }};
+            // Data for walls passed as JSON
+            const wallsData = {{ walls_json | safe }};
 
-            // Create scene, camera, and renderer
+            // Initialize scene, camera, and renderer
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Add grid helper for debugging
-            const gridHelper = new THREE.GridHelper(500, 50);
-            scene.add(gridHelper);
-
-            // Add lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
-
+            // Add basic lighting
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight.position.set(10, 10, 10).normalize();
+            directionalLight.position.set(10, 10, 10);
             scene.add(directionalLight);
 
-            function createWalls(wallsData) {
-                wallsData.forEach(wall => {
+            // Function to create walls from data
+            function createWalls(data) {
+                data.forEach(wall => {
                     const points = wall.points;
                     for (let i = 0; i < points.length - 1; i++)
                     {
-                        const start = points[i];
-                        const end = points[i + 1];
+                        const [x1, y1] = points[i];
+                        const [x2, y2] = points[i + 1];
 
-                        // Create wall geometry as a box between two points
-                        const wallWidth = Math.hypot(end[0] - start[0], end[1] - start[1]);
-                        const wallHeight = 10; // Wall height
-                        const wallDepth = 10; // Wall thickness
+                        // Wall dimensions and geometry
+                        const width = Math.hypot(x2 - x1, y2 - y1);
+                        const height = 10;
+                        const depth = 1;
 
-                        const geometry = new THREE.BoxGeometry(wallWidth, wallHeight, wallDepth);
-
-                        // Calculate wall position
-                        const midX = (start[0] + end[0]) / 2;
-                        const midY = (start[1] + end[1]) / 2;
-
-                        // Rotate and position the wall
+                        const geometry = new THREE.BoxGeometry(width, height, depth);
                         const material = new THREE.MeshLambertMaterial({ color: 0x888888 });
                         const wall = new THREE.Mesh(geometry, material);
 
-                        const angle = Math.atan2(end[1] - start[1], end[0] - start[0]);
-                        wall.position.set(midX, wallHeight / 2, midY); // Position in the middle of the segment
-                        wall.rotation.y = -angle; // Rotate wall to match the direction
+                        // Wall position and rotation
+                        const midX = (x1 + x2) / 2;
+                        const midY = (y1 + y2) / 2;
+                        const angle = Math.atan2(y2 - y1, x2 - x1);
 
-                        // Debug: Log wall details
-                        console.log(`Wall created from ${start} to ${end}, midpoint: (${midX}, ${midY})`);
+                        wall.position.set(midX, height / 2, midY);
+                        wall.rotation.y = -angle;
 
                         scene.add(wall);
                     }
                 });
             }
 
-            // Create walls
+            // Generate walls
             createWalls(wallsData);
 
-            // Add OrbitControls for interaction
+            // Add camera controls
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.minDistance = 50;
-            controls.maxDistance = 500;
 
-            // Adjust camera position
-            camera.position.set(0, 200, 500); // Ensure the camera is far enough to see everything
-            camera.lookAt(0, 0, 0);
+            // Camera position
+            camera.position.set(0, 100, 300);
 
             // Animation loop
             function animate() {
                 requestAnimationFrame(animate);
-                controls.update(); // Update OrbitControls
+                controls.update();
                 renderer.render(scene, camera);
             }
             animate();
         </script>
-
-
-
     </body>
 
 </html>

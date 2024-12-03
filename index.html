@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>3D Room Visualization</title>
+        <title>3D Room Visualization with Materials</title>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
@@ -14,11 +14,11 @@
         <script>
             // Set up the scene
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf0f0f0); // Light gray background
+            scene.background = new THREE.Color(0xf0f0f0);
 
             // Set up the camera
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 15, 30); // Adjust position for a 3D view
+            camera.position.set(0, 15, 30);
             camera.lookAt(0, 0, 0);
 
             // Set up the renderer
@@ -35,44 +35,31 @@
             scene.add(directionalLight);
 
             // Add grid and axes helpers
-            const gridHelper = new THREE.GridHelper(50, 50); // Larger grid for room visualization
+            const gridHelper = new THREE.GridHelper(50, 50);
             scene.add(gridHelper);
 
             const axesHelper = new THREE.AxesHelper(5);
             scene.add(axesHelper);
 
-            // Function to load and parse CSV
-            const loadCSV = (url) => {
-                return new Promise((resolve, reject) => {
-                    Papa.parse(url, {
-                        download: true,
-                        header: true, // Assume the first row contains headers (X, Y, etc.)
-                        complete: (results) => resolve(results.data),
-                        error: (err) => reject(err),
-                    });
-                });
-            };
+            // Load texture
+            const textureLoader = new THREE.TextureLoader();
+            const wallTexture = textureLoader.load('./floorplans/1.jpg'); // Replace with your texture file path
 
-            // Preprocess and validate coordinates
-            const preprocessCoordinates = (data) => {
-                return data.filter((row) => {
-                    const x = parseFloat(row.X);
-                    const y = parseFloat(row.Y);
-                    return !isNaN(x) && !isNaN(y);
-                });
-            };
-
-            // Function to draw 3D walls
+            // Function to draw 3D walls with material
             const drawWalls = (coordinates) => {
-                const wallHeight = 1; // Height of the walls
-                const wallThickness = 0.5; // Thickness of the walls
+                const wallHeight = 5; // Height of the walls
+                const wallThickness = 0.1; // Thickness of the walls
 
-                for (let i = 0; i < coordinates.length; i++)
+                const wallMaterial = new THREE.MeshStandardMaterial({
+                    map: wallTexture, // Apply the texture
+                    color: 0xffffff, // Optional base color
+                });
+
+                for (let i = 0; i < coordinates.length - 1; i++)
                 {
                     const start = coordinates[i];
-                    const end = coordinates[(i + 1) % coordinates.length]; // Loop to the first point
+                    const end = coordinates[i + 1];
 
-                    // Parse and validate coordinates
                     const startX = parseFloat(start.X);
                     const startY = parseFloat(start.Y);
                     const endX = parseFloat(end.X);
@@ -81,77 +68,74 @@
                     if (isNaN(startX) || isNaN(startY) || isNaN(endX) || isNaN(endY))
                     {
                         console.error('Invalid coordinates detected:', { start, end });
-                        continue; // Skip invalid walls
+                        continue;
                     }
 
-                    // Scale coordinates for visibility
-                    const scaledStartX = startX * 20;
-                    const scaledStartY = startY * 20;
-                    const scaledEndX = endX * 20;
-                    const scaledEndY = endY * 20;
+                    const scaleFactor = 50;
+                    const scaledStartX = startX * scaleFactor;
+                    const scaledStartY = startY * scaleFactor;
+                    const scaledEndX = endX * scaleFactor;
+                    const scaledEndY = endY * scaleFactor;
 
-                    // Calculate wall length and angle
-                    const wallLength = Math.sqrt((scaledEndX - scaledStartX) ** 2 + (scaledEndY - scaledStartY) ** 2);
-                    const angle = Math.atan2(scaledEndY - scaledStartY, scaledEndX - scaledStartX);
-
-                    // Create a wall using BoxGeometry
-                    const geometry = new THREE.BoxGeometry(wallLength, wallHeight, wallThickness);
-                    const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
-                    const wall = new THREE.Mesh(geometry, material);
-
-                    // Position and rotate the wall
-                    wall.position.set(
-                        (scaledStartX + scaledEndX) / 2, // Midpoint for X
-                        wallHeight / 2,                  // Raise to half the height
-                        (scaledStartY + scaledEndY) / 2  // Midpoint for Y
+                    const wallLength = Math.sqrt(
+                        (scaledEndX - scaledStartX) ** 2 +
+                        (scaledEndY - scaledStartY) ** 2
                     );
-                    wall.rotation.y = -angle; // Rotate wall to align with the segment
+                    const angle = Math.atan2(
+                        scaledEndY - scaledStartY,
+                        scaledEndX - scaledStartX
+                    );
+
+                    const geometry = new THREE.BoxGeometry(wallLength, wallHeight, wallThickness);
+
+                    const wall = new THREE.Mesh(geometry, wallMaterial);
+
+                    wall.position.set(
+                        (scaledStartX + scaledEndX) / 2,
+                        wallHeight / 2,
+                        (scaledStartY + scaledEndY) / 2
+                    );
+                    wall.rotation.y = -angle;
 
                     scene.add(wall);
                 }
             };
 
-            // Add a floor
-            const addFloor = () => {
-                const floorGeometry = new THREE.PlaneGeometry(50, 50);
-                const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
-                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-                floor.rotation.x = -Math.PI / 2; // Rotate to lay flat
-                floor.position.y = 0; // Place at ground level
-                scene.add(floor);
+            // Function to load and parse CSV
+            const loadCSV = (url) => {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(url, {
+                        download: true,
+                        header: true,
+                        complete: (results) => resolve(results.data),
+                        error: (err) => reject(err),
+                    });
+                });
             };
-            addFloor();
+
+            // Preprocess coordinates
+            const preprocessCoordinates = (data) => {
+                return data.filter((row) => !isNaN(parseFloat(row.X)) && !isNaN(parseFloat(row.Y)));
+            };
 
             // Load CSV and draw 3D room
-            loadCSV('coordinates.csv') // Replace with your CSV file path
+            loadCSV('coordinates.csv')
                 .then((data) => {
                     const validData = preprocessCoordinates(data);
-                    if (validData.length === 0)
-                    {
-                        console.error('No valid coordinates found in the CSV.');
-                        return;
-                    }
-                    console.log('Validated Data:', validData);
                     drawWalls(validData);
                     animate();
                 })
                 .catch((err) => console.error('Error loading CSV:', err));
 
-
-            // Add OrbitControls for interaction
+            // Orbit controls
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.minDistance = 50;
-            controls.maxDistance = 500;
-
-            // Adjust camera position
-            camera.position.set(0, 200, 500); // Ensure the camera is far enough to see everything
-            camera.lookAt(0, 0, 0);
 
             // Animation loop
             const animate = () => {
                 requestAnimationFrame(animate);
+                controls.update();
                 renderer.render(scene, camera);
             };
         </script>
