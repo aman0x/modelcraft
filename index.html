@@ -48,7 +48,7 @@
             // Function to draw 3D walls with material
             const drawWalls = (coordinates) => {
                 const wallHeight = 5;
-                const wallThickness = 0.1;
+                const wallThickness = 0.21;
 
                 const wallMaterial = new THREE.MeshStandardMaterial({
                     map: wallTexture,
@@ -75,7 +75,7 @@
                         continue;
                     }
 
-                    const scaleFactor = 20;
+                    const scaleFactor = 80;
                     const scaledStartX = startX * scaleFactor;
                     const scaledStartY = startY * scaleFactor;
                     const scaledEndX = endX * scaleFactor;
