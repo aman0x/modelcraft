@@ -36,3 +36,8 @@ Phase 7: Finalization and Deployment
     Deploy the tool on a server or as a web application.
     Create documentation for usage and API.
     Regularly update and maintain the tool (AI model, features).
+
+
+Study:
+
+https://stackoverflow.com/questions/9310543/whats-the-use-of-canny-before-houghlines-opencv
