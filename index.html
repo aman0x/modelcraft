@@ -31,11 +31,17 @@
             scene.add(floor);
 
             // Add lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Soft overall light
             scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4); // Focused light
             directionalLight.position.set(100, 300, 200);
             scene.add(directionalLight);
+            const gridHelper = new THREE.GridHelper(1000, 20);
+            scene.add(gridHelper);
+
+            const axesHelper = new THREE.AxesHelper(500);
+            scene.add(axesHelper);
 
             // Load room data from JSON
             fetch("detections.json")
@@ -50,10 +56,19 @@
                         const x2 = item.x2 / 10;
                         const y2 = item.y2 / 10;
 
-                        const wallThickness = 5; // Thickness of walls
-                        const height = 100; // Height of walls
+                        const wallThickness = 2; // Thickness of walls
+                        const height = 300; // Height of walls
 
-                        const color = item.class === "wall" ? 0x808080 : 0x3498db; // Gray for walls
+                        // Define materials for different classes
+                        const materials = {
+                            wall: new THREE.MeshBasicMaterial({ color: 0xff0000 }), // Bright red
+                            door: new THREE.MeshBasicMaterial({ color: 0x8B4513 }), // Brown
+                            window: new THREE.MeshBasicMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.7 }) // Light blue
+                        };
+
+
+
+                        const material = materials[item.class.toLowerCase()] || new THREE.MeshStandardMaterial({ color: 0xffffff }); // Default material
 
                         // Create walls around the room (4 walls)
                         const walls = [
@@ -65,7 +80,6 @@
 
                         walls.forEach(wall => {
                             const geometry = new THREE.BoxGeometry(wall.width, height, wall.depth);
-                            const material = new THREE.MeshStandardMaterial({ color });
                             const wallMesh = new THREE.Mesh(geometry, material);
 
                             wallMesh.position.set(wall.x, height / 2, wall.y); // Position the wall
@@ -77,6 +91,11 @@
                     animate();
                 })
                 .catch(err => console.error("Error loading JSON:", err));
+
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
 
             function animate() {
                 requestAnimationFrame(animate);
